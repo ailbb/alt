@@ -4,6 +4,11 @@ import ch.ethz.ssh2.ChannelCondition;
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.Session;
 import ch.ethz.ssh2.StreamGobbler;
+import com.ailbb.ajj.$;
+import com.ailbb.ajj.entity.$ConnConfiguration;
+import com.ailbb.ajj.entity.$Result;
+import com.ailbb.ajj.entity.$Status;
+import com.ailbb.alt.exception.$LinuxException;
 
 import static com.ailbb.ajj.$.*;
 
@@ -11,147 +16,100 @@ import static com.ailbb.ajj.$.*;
  * Created by Wz on 6/20/2018.
  */
 public class $Linux {
-    private String single = null;
     Connection connection = null;
+    private $ConnConfiguration connConfiguration;
+    public final int $PORT = 22;
 
-    private String ip = "127.0.0.1";
-    private String username = "root";
-    private String password = "123456";
-
-    private int timeOut = 1000 * 5 * 60;
-
-    public $Linux() {
+    /**
+     * 初始化对象
+     * @param connConfiguration
+     * @return
+     */
+    public $Linux init($ConnConfiguration connConfiguration){
+        this.setConnConfiguration(connConfiguration)
+            .setConnection(new Connection(connConfiguration.getIp(), connConfiguration.getPort()))
+            .login();
+        return this;
     }
 
-    public $Linux(String ip, String username, String password) {
-        this.ip = ip;
-        this.username = username;
-        this.password = password;
-    }
-
-    public boolean login(){
+    public $Result login(){
         try {
-            return getConnection().authenticateWithPassword(username, password);
-        } catch (Exception e) {
-            exception(e);
-            return false;
-        }
-    }
-
-    public Connection getConnection(){
-        String _single  = this.toString().replaceAll("\\s+||\\S+", "");
-
-        if(single == null || single != _single) {
-            single = _single;
-        } else {
-            return connection;
-        }
-
-        try {
-            if(null != connection) closeConnection();
-            connection = new Connection(ip);
             connection.connect();
+            if(!connection.authenticateWithPassword(connConfiguration.getUsername(), connConfiguration.getPassword()))
+                throw new $LinuxException.$LoginErrorException("鉴权异常！");
         } catch (Exception e) {
+            error("连接服务器失败：" + this.toString() + e.getMessage());
             exception(e);
         }
 
-        return connection;
+        return $.result();
     }
 
-    public void closeConnection() {
+    public $Result closeConnection() {
         if(connection != null)
             connection.close();
 
-        info(ip + "连接已关闭>>>>>>>>>>>>>>>>>>>>>>>>");
+        info(connConfiguration.getIp() + " - 连接已关闭>>>>>>>>>>>>>>>>>>>>>>>>");
+
+        return $.result();
     }
 
-    public SSHResult cmd(String c) {
+    public $Result cmd(String c) {
         return exec(c);
     }
 
-    public SSHResult exec(String c) {
-        SSHResult ssh = new SSHResult(c);
+    public $Result exec(String c) {
+        $Result ssh = new $Result().setRemark(c);
+        Integer status = -1;
+        String data = null;
+        String err = null;
 
         try {
-            Integer status = -1;
-            String msg = null;
-            String err = null;
+            Session session = null;
+                session = getConnection().openSession();
+            session.execCommand(c);
 
-            if (login()){
-                Session session = null;
-                    session = getConnection().openSession();
-                session.execCommand(c);
+            data = read(new StreamGobbler(session.getStdout()));
+            err = read(new StreamGobbler(session.getStderr()));
+            status = session.getExitStatus();
 
-                msg = read(new StreamGobbler(session.getStdout()));
-                err = read(new StreamGobbler(session.getStderr()));
-                status = session.getExitStatus();
-
-                session.waitForCondition(ChannelCondition.EXIT_STATUS, timeOut);
-                session.close();
-            } else {
-                ssh.setSuccess(false);
-                error(err = ("登录失败：" + this.toString()));
-            }
-
-            ssh.setStatus(status).setMessage(msg).setError(err);
+            session.waitForCondition(ChannelCondition.EXIT_STATUS, connConfiguration.getTimeOut());
+            session.close();
         } catch (Exception e) {
+            ssh.setSuccess(false);
+            error(err = ("执行命令失败：" + this.toString()));
             e.printStackTrace();
         } finally {
             closeConnection();
         }
+
+        ssh.setCode(status).setData(data).addError(err);
 
         info(ssh);
 
         return ssh;
     }
 
-    public String getIp() {
-        return ip;
+    public Connection getConnection(){
+        return connection;
     }
 
-    public $Linux setIp(String ip) {
-        this.ip = ip;
+    public $Linux setConnection(Connection connection) {
+        this.connection = connection;
         return this;
     }
 
-    public String getUsername() {
-        return username;
+    public $ConnConfiguration getConnConfiguration() {
+        return connConfiguration;
     }
 
-    public $Linux setUsername(String username) {
-        this.username = username;
+    public $Linux setConnConfiguration($ConnConfiguration connConfiguration) {
+        this.connConfiguration = connConfiguration;
         return this;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public $Linux setPassword(String password) {
-        this.password = password;
-        return this;
-    }
-
-    public int getTimeOut() {
-        return timeOut;
-    }
-
-    public $Linux setTimeOut(int timeOut) {
-        this.timeOut = timeOut;
-        return this;
-    }
-
-    public void getHosts(){
-
     }
 
     @Override
     public String toString() {
-        return "{" +
-                " ip='" + ip + '\'' +
-                ", username='" + username + '\'' +
-                ", password='" + password + '\'' +
-                ", timeOut=" + timeOut +
-                '}';
+        return connConfiguration.toString();
     }
 }

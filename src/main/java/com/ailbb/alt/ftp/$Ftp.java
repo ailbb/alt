@@ -1,5 +1,8 @@
 package com.ailbb.alt.ftp;
 
+import com.ailbb.ajj.$;
+import com.ailbb.ajj.entity.$ConnConfiguration;
+import com.ailbb.ajj.entity.$Result;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPClientConfig;
@@ -15,21 +18,15 @@ import static com.ailbb.ajj.$.*;
  * Created by Wz on 6/20/2018.
  */
 public class $Ftp {
+    private $ConnConfiguration connConfiguration;
+    private final int $PORT = 21;
     private InetAddress host;
-    private String ip = "127.0.0.1";
-    private int port = 21;
-    private String username = "root";
-    private String password = "123456";
-
-    private long connectTimeOut = 1000 * 60 * 60; // 默认1小时超时时间
-
     private FTPClient ftpClient = null;
     private boolean isLogin = false;
 
-
-
-    public boolean login() {
-        if(isLogin) return isLogin;
+    public $Result login() {
+        if(isLogin)
+            return $.result().setSuccess(isLogin);
 
         try {
             ftpClient = new FTPClient();
@@ -38,11 +35,11 @@ public class $Ftp {
             ftpClient.setControlEncoding("UTF-8");
             ftpClient.configure(ftpClientConfig);
             if(null == host) {
-                host = InetAddress.getByName(ip);
+                host = InetAddress.getByName(connConfiguration.getIp());
             } else {
-                ip = host.getHostAddress();
+                connConfiguration.setIp(host.getHostAddress());
             }
-            ftpClient.connect(host, port);
+            ftpClient.connect(host, connConfiguration.getPort());
 
             //ftp连接回答返回码
             int reply = ftpClient.getReplyCode();
@@ -50,27 +47,27 @@ public class $Ftp {
             if (!FTPReply.isPositiveCompletion(reply)) {
                 ftpClient.disconnect();
                 error("连接ftp服务器失败, code:\t" + reply);
-                return isLogin;
+                return $.result().setSuccess(isLogin);
             }
 
-            isLogin = ftpClient.login(username, password);
+            isLogin = ftpClient.login(connConfiguration.getUsername(), connConfiguration.getPassword());
 
             if (isLogin) {
                 //设置传输协议
                 ftpClient.enterLocalPassiveMode();
                 ftpClient.setFileType(FTPClient.BINARY_FILE_TYPE);
-                info("登陆FTP服务器:" + username + "@" + ip);
+                info("登陆FTP服务器:" + connConfiguration.getUsername() + "@" + connConfiguration.getIp());
                 isLogin = true;
                 ftpClient.setBufferSize(1024 *2);
                 ftpClient.setDataTimeout(30 *1000);
             }
         } catch (Exception e) {
-            error("登陆服务器失败：" + username + "@" + ip, e);
+            error("登陆服务器失败：" + connConfiguration.getUsername() + "@" + connConfiguration.getIp(), e);
         } finally {
             if(isLogin) async(new Runnable() {
                 public void run() {
                     try {
-                        Thread.sleep(connectTimeOut);
+                        Thread.sleep(connConfiguration.getTimeOut());
                         logout();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -79,27 +76,29 @@ public class $Ftp {
             });
         }
 
-        return isLogin;
+        return $.result().setSuccess(isLogin);
     }
 
     /**
      * 退出/关闭服务器连接
      */
-    public void logout(){
+    public $Result logout(){
         if (null != ftpClient && ftpClient.isConnected()) {
             try {
                 if (ftpClient.logout())
-                    info("成功退出服务器：" + ip);
+                    info("成功退出服务器：" + connConfiguration.getIp());
             } catch (IOException e) {
-                error("退出服务器异常：" + ip, e);
+                error("退出服务器异常：" + connConfiguration.getIp(), e);
             } finally {
                 try {
                     ftpClient.disconnect();    //关闭ftp服务器连接
                 } catch (IOException e) {
-                    error("关闭服务器异常：" + ip, e);
+                    error("关闭服务器异常：" + connConfiguration.getIp(), e);
                 }
             }
         }
+
+        return $.result();
     }
 
     /**
@@ -109,8 +108,8 @@ public class $Ftp {
      * @param destPaths
      * @return
      */
-    public boolean uploadFile(String sourcePath, boolean isReplace, String... destPaths) {
-        if (!isExists(sourcePath)) return false;
+    public $Result uploadFile(String sourcePath, boolean isReplace, String... destPaths) {
+        if (!isExists(sourcePath)) return $.result().setSuccess(false);
 
         boolean isSuccess = true;
         // format path
@@ -133,7 +132,7 @@ public class $Ftp {
                 }
 
                 for (String s : sfile.list()) {
-                    if (!uploadFile(concat(sourcePath, "/", s), isReplace, concat(destPath, "/", s))) isSuccess = false;
+                    if (!uploadFile(concat(sourcePath, "/", s), isReplace, concat(destPath, "/", s)).isSuccess()) isSuccess = false;
                 }
             } else {
                 InputStream is = null;
@@ -147,7 +146,7 @@ public class $Ftp {
                             isSuccess = true;
                         } else {
                             ftpClient.deleteFile(destPath);
-                            isSuccess = uploadFile(sfile, destPath);
+                            isSuccess = uploadFile(sfile, destPath).isSuccess();
                         }
                     }
                 } catch (IOException e) {
@@ -163,10 +162,10 @@ public class $Ftp {
             }
         }
 
-        return isSuccess;
+        return $.result().setSuccess(isSuccess);
     }
 
-    public boolean uploadFile(File localFile, String... remoteUpLoadPath){
+    public $Result uploadFile(File localFile, String... remoteUpLoadPath){
         BufferedInputStream inputStream = null;
         boolean success = true;
         String fileName = localFile.getName();
@@ -195,7 +194,7 @@ public class $Ftp {
             }
         }
 
-        return success;
+        return $.result().setSuccess(success);
     }
 
     public InetAddress getHost() {
@@ -207,48 +206,4 @@ public class $Ftp {
         return this;
     }
 
-    public String getIp() {
-        return ip;
-    }
-
-    public $Ftp setIp(String ip) {
-        ip = ip;
-        return this;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public $Ftp setPort(int port) {
-        port = port;
-        return this;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public $Ftp setUsername(String username) {
-        username = username;
-        return this;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public $Ftp setPassword(String password) {
-        password = password;
-        return this;
-    }
-
-    public long getConnectTimeOut() {
-        return connectTimeOut;
-    }
-
-    public $Ftp setConnectTimeOut(long connectTimeOut) {
-        connectTimeOut = connectTimeOut;
-        return this;
-    }
 }
