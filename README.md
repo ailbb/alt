@@ -5,7 +5,7 @@ Ailbb Linux Tool.
 
 #### Latest Release Version
 ```
-<!-- https://mvnrepository.com/artifact/com.ailbb/ajj -->
+<!-- https://mvnrepository.com/artifact/com.ailbb/alt -->
 <dependency>
     <groupId>com.ailbb</groupId>
     <artifactId>alt</artifactId>
@@ -15,7 +15,7 @@ Ailbb Linux Tool.
 
 #### Latest Snapshot Version
 ```
-<!-- https://mvnrepository.com/artifact/com.ailbb/ajj -->
+<!-- https://mvnrepository.com/artifact/com.ailbb/alt -->
 <dependency>
     <groupId>com.ailbb</groupId>
     <artifactId>alt</artifactId>

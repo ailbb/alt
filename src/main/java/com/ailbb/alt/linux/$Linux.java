@@ -10,6 +10,8 @@ import com.ailbb.ajj.entity.$Result;
 import com.ailbb.ajj.entity.$Status;
 import com.ailbb.alt.exception.$LinuxException;
 
+import java.io.IOException;
+
 import static com.ailbb.ajj.$.*;
 
 /**
@@ -25,69 +27,66 @@ public class $Linux {
      * @param connConfiguration
      * @return
      */
-    public $Linux init($ConnConfiguration connConfiguration){
+    public $Linux init($ConnConfiguration connConfiguration)  {
         this.setConnConfiguration(connConfiguration)
             .setConnection(new Connection(connConfiguration.getIp(), connConfiguration.getPort()))
             .login();
         return this;
     }
 
-    public $Result login(){
+    public $Result login()  {
+        $Result rs = $.result();
         try {
             connection.connect();
             if(!connection.authenticateWithPassword(connConfiguration.getUsername(), connConfiguration.getPassword()))
                 throw new $LinuxException.$LoginErrorException("鉴权异常！");
-        } catch (Exception e) {
-            error("连接服务器失败：" + this.toString() + e.getMessage());
-            exception(e);
+            rs.addMessage(info(connConfiguration.getIp() + " - 连接成功>>>>>>>>>>>>>>>>>>>>>>>>"));
+        } catch (IOException e) {
+            rs.addError($.exception(e));
+        } catch ($LinuxException.$LoginErrorException e) {
+            rs.addError($.exception(e));
         }
 
-        return $.result();
+        return rs;
     }
 
     public $Result closeConnection() {
+        $Result rs = $.result();
+
         if(connection != null)
             connection.close();
 
-        info(connConfiguration.getIp() + " - 连接已关闭>>>>>>>>>>>>>>>>>>>>>>>>");
-
-        return $.result();
+        return rs.addMessage(info(connConfiguration.getIp() + " - 连接已关闭>>>>>>>>>>>>>>>>>>>>>>>>"));
     }
 
-    public $Result cmd(String c) {
+    public $Result cmd(String c)  {
         return exec(c);
     }
 
-    public $Result exec(String c) {
-        $Result ssh = new $Result().setRemark(c);
+    public $Result exec(String c)  {
+        $Result ssh = $.result();
         Integer status = -1;
-        String data = null;
-        String err = null;
 
         try {
             Session session = null;
                 session = getConnection().openSession();
             session.execCommand(c);
 
-            data = read(new StreamGobbler(session.getStdout()));
-            err = read(new StreamGobbler(session.getStderr()));
-            status = session.getExitStatus();
+            ssh = $.resultIf(read(new StreamGobbler(session.getStdout())), read(new StreamGobbler(session.getStderr())));
 
+            ssh.setCode(session.getExitStatus());
             session.waitForCondition(ChannelCondition.EXIT_STATUS, connConfiguration.getTimeOut());
             session.close();
-        } catch (Exception e) {
-            ssh.setSuccess(false);
-            error(err = ("执行命令失败：" + this.toString()));
-            e.printStackTrace();
+
+        } catch (IOException e) {
+            ssh.addError(e);
         } finally {
             closeConnection();
         }
 
-        ssh.setCode(status).setData(data).addError(err);
+        ssh.addMessage(info(ssh));
 
-        info(ssh);
-
-        return ssh;
+        return ssh.setRemark(c);
     }
 
     public Connection getConnection(){

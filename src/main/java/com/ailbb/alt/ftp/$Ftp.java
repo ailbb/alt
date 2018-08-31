@@ -10,6 +10,7 @@ import org.apache.commons.net.ftp.FTPReply;
 
 import java.io.*;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.TimeZone;
 
 import static com.ailbb.ajj.$.*;
@@ -24,9 +25,11 @@ public class $Ftp {
     private FTPClient ftpClient = null;
     private boolean isLogin = false;
 
-    public $Result login() {
+    public $Result login()  {
+        $Result rs = $.result();
+
         if(isLogin)
-            return $.result().setSuccess(isLogin);
+            return rs.setSuccess(isLogin);
 
         try {
             ftpClient = new FTPClient();
@@ -46,8 +49,7 @@ public class $Ftp {
 
             if (!FTPReply.isPositiveCompletion(reply)) {
                 ftpClient.disconnect();
-                error("连接ftp服务器失败, code:\t" + reply);
-                return $.result().setSuccess(isLogin);
+                return rs.setSuccess(isLogin).setCode(reply).addMessage("连接ftp服务器失败, code:\t" + reply);
             }
 
             isLogin = ftpClient.login(connConfiguration.getUsername(), connConfiguration.getPassword());
@@ -62,43 +64,44 @@ public class $Ftp {
                 ftpClient.setDataTimeout(30 *1000);
             }
         } catch (Exception e) {
-            error("登陆服务器失败：" + connConfiguration.getUsername() + "@" + connConfiguration.getIp(), e);
+            rs.addError($.exception(e)).addMessage("登陆服务器失败：" + connConfiguration.getUsername() + "@" + connConfiguration.getIp());
         } finally {
             if(isLogin) async(new Runnable() {
                 public void run() {
                     try {
                         Thread.sleep(connConfiguration.getTimeOut());
                         logout();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                    } catch (Exception  e) {
+                        rs.addError($.exception(e));
                     }
                 }
             });
         }
 
-        return $.result().setSuccess(isLogin);
+        return rs.setSuccess(isLogin);
     }
 
     /**
      * 退出/关闭服务器连接
      */
-    public $Result logout(){
+    public $Result logout()  {
+        $Result rs = $.result();
         if (null != ftpClient && ftpClient.isConnected()) {
             try {
                 if (ftpClient.logout())
                     info("成功退出服务器：" + connConfiguration.getIp());
             } catch (IOException e) {
-                error("退出服务器异常：" + connConfiguration.getIp(), e);
+                rs.addError($.exception(e)).addMessage("退出服务器异常：" + connConfiguration.getIp());
             } finally {
                 try {
                     ftpClient.disconnect();    //关闭ftp服务器连接
                 } catch (IOException e) {
-                    error("关闭服务器异常：" + connConfiguration.getIp(), e);
+                    rs.addError($.exception(e)).addMessage("关闭服务器异常：" + connConfiguration.getIp());
                 }
             }
         }
 
-        return $.result();
+        return rs;
     }
 
     /**
@@ -109,9 +112,10 @@ public class $Ftp {
      * @return
      */
     public $Result uploadFile(String sourcePath, boolean isReplace, String... destPaths) {
-        if (!isExists(sourcePath)) return $.result().setSuccess(false);
+        $Result rs = $.result();
 
-        boolean isSuccess = true;
+        if (!isExists(sourcePath)) return rs.setSuccess(false);
+
         // format path
         sourcePath = getPath(sourcePath);
         File sfile = getFile(sourcePath);
@@ -125,14 +129,13 @@ public class $Ftp {
                     try {
                         ftpClient.makeDirectory(destPath);
                     } catch (IOException e1) {
-                        exception(e1);
-                        isSuccess = false;
+                        rs.setSuccess(false).addError(exception(e1));
                         continue;
                     }
                 }
 
                 for (String s : sfile.list()) {
-                    if (!uploadFile(concat(sourcePath, "/", s), isReplace, concat(destPath, "/", s)).isSuccess()) isSuccess = false;
+                    if (!uploadFile(concat(sourcePath, "/", s), isReplace, concat(destPath, "/", s)).isSuccess()) rs.setSuccess(false);
                 }
             } else {
                 InputStream is = null;
@@ -143,29 +146,29 @@ public class $Ftp {
                     if (is != null && ftpClient.getReplyCode() != FTPReply.FILE_UNAVAILABLE) { // 如果文件存在
                         if (!isReplace) {
                             warn(String.format("%s is exists!", destPath));
-                            isSuccess = true;
+                            rs.setSuccess(true);
                         } else {
                             ftpClient.deleteFile(destPath);
-                            isSuccess = uploadFile(sfile, destPath).isSuccess();
+                            rs.setSuccess(uploadFile(sfile, destPath).isSuccess());
                         }
                     }
                 } catch (IOException e) {
-                    isSuccess = false;
-                    exception(e);
+                    rs.setSuccess(false).addError(exception(e));
                 } finally {
                     if (null != is) try {
                         is.close();
                     } catch (IOException e) {
-                        error(e);
+                        warn(e);
                     }
                 }
             }
         }
 
-        return $.result().setSuccess(isSuccess);
+        return rs;
     }
 
-    public $Result uploadFile(File localFile, String... remoteUpLoadPath){
+    public $Result uploadFile(File localFile, String... remoteUpLoadPath)  {
+        $Result rs = $.result();
         BufferedInputStream inputStream = null;
         boolean success = true;
         String fileName = localFile.getName();
@@ -176,25 +179,24 @@ public class $Ftp {
                 ftpClient.changeWorkingDirectory(r.trim()); //改变工作路径
                 inputStream = new BufferedInputStream(new FileInputStream(localFile));
                 if (ftpClient.storeFile(fileName, inputStream)) {
-                    info("上传成功：" + fileName);
+                    rs.addMessage("上传成功：" + fileName);
                 } else {
                     success = false;
                 }
-            } catch (Exception e) {
-                success = false;
-                error("ftp上传文件失败", e);
+            } catch (IOException e) {
+                rs.addError($.exception(e)).addMessage("ftp上传文件失败");
             } finally {
                 if (null != inputStream){
                     try {
                         inputStream.close();
                     } catch (IOException e) {
-                        error("ftp上传文件关闭IO流失败", e);
+                        rs.addError($.exception(e)).addMessage("ftp上传文件关闭IO流失败");
                     }
                 }
             }
         }
 
-        return $.result().setSuccess(success);
+        return rs.setSuccess(success);
     }
 
     public InetAddress getHost() {

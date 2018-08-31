@@ -158,7 +158,7 @@
         <version.ssh>262</version.ssh>
         <version.ftp>3.6</version.ftp>
         <version.jsch>0.1.54</version.jsch>
-        <version.ailbb.ajj>1.9-SNAPSHOT</version.ailbb.ajj>
+        <version.ailbb.ajj>1.10-SNAPSHOT</version.ailbb.ajj>
     </properties>
 
     <dependencies>
