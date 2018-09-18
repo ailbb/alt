@@ -19,8 +19,8 @@ import static com.ailbb.ajj.$.*;
  * Created by Wz on 6/20/2018.
  */
 public class $Ftp {
+    public static final int $PORT = 21;
     private $ConnConfiguration connConfiguration;
-    private final int $PORT = 21;
     private InetAddress host;
     private FTPClient ftpClient = null;
     private boolean isLogin = false;

@@ -18,9 +18,9 @@ import static com.ailbb.ajj.$.*;
  * Created by Wz on 6/20/2018.
  */
 public class $Linux {
+    public static final int $PORT = 22;
     Connection connection = null;
     private $ConnConfiguration connConfiguration;
-    public final int $PORT = 22;
 
     /**
      * 初始化对象
