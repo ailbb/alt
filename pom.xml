@@ -11,7 +11,7 @@
     <packaging>jar</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
-    <url>https://github.com/ailbb/${artifactId}</url>
+    <url>https://github.com/ailbb/${project.artifactId}</url>
     <description>Ailbb cluster tools java</description>
 
     <licenses>
@@ -32,12 +32,12 @@
 
     <scm>
         <connection>
-            scm:git:https://github.com/ailbb/${artifactId}.git
+            scm:git:https://github.com/ailbb/${project.artifactId}.git
         </connection>
         <developerConnection>
-            scm:git:https://github.com/ailbb/${artifactId}.git
+            scm:git:https://github.com/ailbb/${project.artifactId}.git
         </developerConnection>
-        <url>https://github.com/ailbb/${artifactId}</url>
+        <url>https://github.com/ailbb/${project.artifactId}</url>
         <tag>vv${project.version}</tag>
     </scm>
 
@@ -53,13 +53,13 @@
     </distributionManagement>
 
     <build>
-        <finalName>${artifactId}-${version}</finalName>
+        <finalName>${project.artifactId}-${project.version}</finalName>
 
         <plugins>
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>1.6.3</version>
+                <version>1.6.8</version>
                 <extensions>true</extensions>
                 <configuration>
                     <serverId>ossrh</serverId>
@@ -121,7 +121,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>${groupId}.${artifactId}.Application</mainClass>
+                            <mainClass>${project.groupId}.${project.artifactId}.Application</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
