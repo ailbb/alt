@@ -9,7 +9,7 @@ Ailbb Linux Tool.
 <dependency>
     <groupId>com.ailbb</groupId>
     <artifactId>alt</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
 </dependency>
 ```
 
