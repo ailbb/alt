@@ -1,26 +1,31 @@
 package com.ailbb.alt.linux;
 
-import ch.ethz.ssh2.ChannelCondition;
-import ch.ethz.ssh2.Connection;
-import ch.ethz.ssh2.Session;
-import ch.ethz.ssh2.StreamGobbler;
 import com.ailbb.ajj.$;
 import com.ailbb.ajj.entity.$ConnConfiguration;
 import com.ailbb.ajj.entity.$Result;
-import com.ailbb.ajj.entity.$Status;
-import com.ailbb.alt.exception.$LinuxException;
+import com.ailbb.alt.linux.ssh.$SSHInterface;
+import com.ailbb.alt.linux.ssh.$SSHLocalRuntime;
+import com.ailbb.alt.linux.ssh.$SSHRemoteEh2;
+import com.ailbb.alt.linux.ssh.$SSHRemoteJsch;
 
-import java.io.IOException;
-
-import static com.ailbb.ajj.$.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Wz on 6/20/2018.
  */
 public class $Linux {
     public static final int $PORT = 22;
-    Connection connection = null;
     private $ConnConfiguration connConfiguration;
+    private List<$SSHInterface> sshs = new ArrayList<>();
+
+    /**
+     * 初始化对象
+     * @return
+     */
+    public $Linux init()  {
+        return init(null);
+    }
 
     /**
      * 初始化对象
@@ -28,35 +33,18 @@ public class $Linux {
      * @return
      */
     public $Linux init($ConnConfiguration connConfiguration)  {
-        this.setConnConfiguration(connConfiguration)
-            .setConnection(new Connection(connConfiguration.getIp(), connConfiguration.getPort()))
-            .login();
-        return this;
-    }
+        this.setConnConfiguration(connConfiguration);
 
-    public $Result login()  {
-        $Result rs = $.result();
-        try {
-            connection.connect();
-            if(!connection.authenticateWithPassword(connConfiguration.getUsername(), connConfiguration.getPassword()))
-                throw new $LinuxException.$LoginErrorException("鉴权异常！");
-            rs.addMessage(info(connConfiguration.getIp() + " - 连接成功>>>>>>>>>>>>>>>>>>>>>>>>"));
-        } catch (IOException e) {
-            rs.addError($.exception(e));
-        } catch ($LinuxException.$LoginErrorException e) {
-            rs.addError($.exception(e));
+        sshs.clear();
+
+        if($.isEmptyOrNull(connConfiguration) || connConfiguration.getIp().equals($.http.getIp()))
+            sshs.add(new $SSHLocalRuntime());
+        else {
+            sshs.add(new $SSHRemoteEh2(connConfiguration));
+            sshs.add(new $SSHRemoteJsch(connConfiguration));
         }
 
-        return rs;
-    }
-
-    public $Result closeConnection() {
-        $Result rs = $.result();
-
-        if(connection != null)
-            connection.close();
-
-        return rs.addMessage(info(connConfiguration.getIp() + " - 连接已关闭>>>>>>>>>>>>>>>>>>>>>>>>"));
+        return this;
     }
 
     public $Result cmd(String c)  {
@@ -64,38 +52,37 @@ public class $Linux {
     }
 
     public $Result exec(String c)  {
-        $Result ssh = $.result();
-        Integer status = -1;
+        return executeCmd(c);
+    }
 
-        try {
-            Session session = null;
-                session = getConnection().openSession();
-            session.execCommand(c);
+    public $Result executeCmd(String c)  {
+        $Result rs = $.result();
 
-            ssh = $.resultIf(read(new StreamGobbler(session.getStdout())), read(new StreamGobbler(session.getStderr())));
+//        for($Linux li : list) {
+//            com.ailbb.alt.$.thread.async(new Runnable() {
+//                @Override
+//                public void run() {
+//                    $Result rs = li.executeCmd("mkdir /home/zhangw");
+//                    com.ailbb.alt.$.sout(li.getConnConfiguration().getIp() + "---" + rs.getData());
+//                    com.ailbb.alt.$.warn(li.getConnConfiguration().getIp() + "---" + rs.getError());
+//                }
+//            });
+//        }
 
-            ssh.setCode(session.getExitStatus());
-            session.waitForCondition(ChannelCondition.EXIT_STATUS, connConfiguration.getTimeOut());
-            session.close();
-
-        } catch (IOException e) {
-            ssh.addError(e);
-        } finally {
-            closeConnection();
+        for($SSHInterface ssh : sshs) {
+            try {
+                rs = ssh.executeCmd(c);
+                break;
+            } catch (Exception e) {
+                $.warn("请求失败，如有其他请求方式，将继续执行...", e); // 单个执行失败不影响其他引擎执行
+            }
         }
 
-        ssh.addMessage(info(ssh));
-
-        return ssh.setRemark(c);
+        return rs;
     }
 
-    public Connection getConnection(){
-        return connection;
-    }
-
-    public $Linux setConnection(Connection connection) {
-        this.connection = connection;
-        return this;
+    public $Result batchExecuteCmd(String c)  {
+        return executeCmd(c);
     }
 
     public $ConnConfiguration getConnConfiguration() {
