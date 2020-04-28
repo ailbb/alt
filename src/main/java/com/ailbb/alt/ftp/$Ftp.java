@@ -69,7 +69,11 @@ public class $Ftp {
             if(isLogin) async(new Runnable() {
                 public void run() {
                     try {
-                        Thread.sleep(connConfiguration.getTimeOut());
+                        int i=0;
+                        while (isLogin && (i++)*1000 < connConfiguration.getTimeOut()) { // 如果没有主动退出，则等待超时
+                            Thread.sleep(1000);
+                        }
+
                         logout();
                     } catch (Exception  e) {
                         rs.addError($.exception(e));
@@ -88,8 +92,10 @@ public class $Ftp {
         $Result rs = $.result();
         if (null != ftpClient && ftpClient.isConnected()) {
             try {
-                if (ftpClient.logout())
+                if (isLogin && ftpClient.logout()) {
+                    isLogin = false;
                     info("成功退出服务器：" + connConfiguration.getIp());
+                }
             } catch (IOException e) {
                 rs.addError($.exception(e)).addMessage("退出服务器异常：" + connConfiguration.getIp());
             } finally {
@@ -224,7 +230,7 @@ public class $Ftp {
         try {
             info(concat("读取最新的文件：", remoteUpLoadPath));
             if(!login().isSuccess()) return rs.addMessage("未登陆！").setSuccess(false);
-            if(existFile(remoteUpLoadPath)) return rs.addMessage("路径不存在！").setSuccess(false);
+            if(!existFile(remoteUpLoadPath)) return rs.addMessage("路径不存在！").setSuccess(false);
             //切换FTP目录
             ftpClient.changeWorkingDirectory(remoteUpLoadPath);
             FTPFile[] ftpFiles = ftpClient.listFiles();
