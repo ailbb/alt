@@ -16,7 +16,7 @@ public class $SSHLocalRuntime extends $SSHExtend implements $SSHInterface {
 
     @Override
     public boolean isConnected() {
-        return $.isEmptyOrNull(rt) ;
+        return !$.isEmptyOrNull(rt) ;
     }
 
     @Override
@@ -45,6 +45,7 @@ public class $SSHLocalRuntime extends $SSHExtend implements $SSHInterface {
             $.info("cmd:" + cmd);
 
             Process proc = getRuntime().exec(cmd); // 执行命令
+
             InputStream stdout = proc.getInputStream(); // 输入流
             InputStream stderr = proc.getErrorStream(); // 输出流
 

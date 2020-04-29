@@ -58,17 +58,6 @@ public class $Linux {
     public $Result executeCmd(String c)  {
         $Result rs = $.result();
 
-//        for($Linux li : list) {
-//            com.ailbb.alt.$.thread.async(new Runnable() {
-//                @Override
-//                public void run() {
-//                    $Result rs = li.executeCmd("mkdir /home/zhangw");
-//                    com.ailbb.alt.$.sout(li.getConnConfiguration().getIp() + "---" + rs.getData());
-//                    com.ailbb.alt.$.warn(li.getConnConfiguration().getIp() + "---" + rs.getError());
-//                }
-//            });
-//        }
-
         for($SSHInterface ssh : sshs) {
             try {
                 rs = ssh.executeCmd(c);
