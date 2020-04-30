@@ -241,16 +241,21 @@ public class $Ftp {
                     if(null == newFile || file.getTimestamp().getTimeInMillis() > newFile.getTimestamp().getTimeInMillis()) newFile = file;
                 }
             }
+
+            rs.addMessage(newFile.getName()); // 保存文件名
+
             in = ftpClient.retrieveFileStream(newFile.getName());
             br = new BufferedReader(new InputStreamReader(in,"UTF-8"));
             String line = null;
             StringBuffer sb = new StringBuffer();
+
             while(null != (line=br.readLine())) {
                 if(maxReadLength < sb.length()) {
                     $.warn("终止读取！超过最大读取行数"+maxReadLength+"，请修改maxReadLength配置！文件总大小："+ newFile.getSize());
                     break;
                 }
                 sb.append(line);
+                sb.append("\r\n");
             }
             rs.setData(sb.toString());
 

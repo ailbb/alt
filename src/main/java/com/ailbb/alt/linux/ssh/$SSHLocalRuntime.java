@@ -44,8 +44,7 @@ public class $SSHLocalRuntime extends $SSHExtend implements $SSHInterface {
         try {
             $.info("cmd:" + cmd);
 
-            Process proc = getRuntime().exec(cmd); // 执行命令
-
+            Process proc = getRuntime().exec(new String[]{"/bin/sh","-c", $.string.trim(cmd)}); // 执行命令
             InputStream stdout = proc.getInputStream(); // 输入流
             InputStream stderr = proc.getErrorStream(); // 输出流
 
