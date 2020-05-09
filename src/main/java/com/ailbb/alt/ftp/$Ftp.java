@@ -297,7 +297,7 @@ public class $Ftp {
         try {
             info(concat("读取文件：", remoteUpLoadPath + "/" + filename));
             if(!login().isSuccess()) return rs.addMessage("未登陆！").setSuccess(false);
-            if(existFile(remoteUpLoadPath)) return rs.addMessage("路径不存在！").setSuccess(false);
+            if(!existFile(remoteUpLoadPath)) return rs.addMessage("路径不存在！").setSuccess(false);
             //切换FTP目录
             ftpClient.changeWorkingDirectory(remoteUpLoadPath);
             FTPFile[] ftpFiles = ftpClient.listFiles();
@@ -334,7 +334,7 @@ public class $Ftp {
         try {
             info(concat("获取文件列表：", remotePath));
             if (!login().isSuccess()) return rs.addMessage("未登陆！").setSuccess(false);
-            if (existFile(remotePath)) return rs.addMessage("文件不存在！").setSuccess(false);
+            if (!existFile(remotePath)) return rs.addMessage("文件不存在！").setSuccess(false);
             //切换FTP目录
             ftpClient.changeWorkingDirectory(remotePath);
             FTPFile[] ftpFiles = ftpClient.listFiles();
@@ -357,7 +357,7 @@ public class $Ftp {
         try {
             info(concat("下载文件：", remoteUpLoadPath, " >>>>>>> ", localpath));
             if(!login().isSuccess()) return rs.addMessage("未登陆！").setSuccess(false);
-            if(existFile(remoteUpLoadPath)) return rs.addMessage("文件不存在！").setSuccess(false);
+            if(!existFile(remoteUpLoadPath)) return rs.addMessage("文件不存在！").setSuccess(false);
             //切换FTP目录
             ftpClient.changeWorkingDirectory(remoteUpLoadPath);
             FTPFile[] ftpFiles = ftpClient.listFiles();
@@ -400,7 +400,7 @@ public class $Ftp {
         try {
             info(concat("下载文件：", remoteUpLoadPath, " >>>>>>> ", localpath));
             if(!login().isSuccess()) return rs.addMessage("未登陆！").setSuccess(false);
-            if(existFile(remoteUpLoadPath)) return rs.addMessage("文件不存在！").setSuccess(false);
+            if(!existFile(remoteUpLoadPath)) return rs.addMessage("文件不存在！").setSuccess(false);
             //切换FTP目录
             ftpClient.changeWorkingDirectory(remoteUpLoadPath);
             FTPFile[] ftpFiles = ftpClient.listFiles();
@@ -486,5 +486,13 @@ public class $Ftp {
 
     public void setMaxReadLength(long maxReadLength) {
         this.maxReadLength = maxReadLength;
+    }
+
+    public FTPClient getFtpClient() {
+        return ftpClient;
+    }
+
+    public void setFtpClient(FTPClient ftpClient) {
+        this.ftpClient = ftpClient;
     }
 }
