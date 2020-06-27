@@ -46,16 +46,17 @@ public class $SSHLocalRuntime extends $SSHExtend implements $SSHInterface {
 
             Process proc = getRuntime().exec(new String[]{"/bin/sh","-c", $.string.trim(cmd)}); // 执行命令
             InputStream stdout = proc.getInputStream(); // 输入流
-            InputStream stderr = proc.getErrorStream(); // 输出流
+            InputStream stderr = proc.getErrorStream(); // 错误流
 
-            rs = readInputStream(stdout, stderr);
+            new $SSHThread(stdout, rs, "data").start();
+            new $SSHThread(stderr, rs, "message").start();
 
             rs.setStatus(statusCmd(proc.waitFor(), 0));
         } catch (Exception e) {
             $.error("本地请求发生异常......");
             throw $.exception(e);
         } finally {
-            disconnect();
+//            disconnect();
         }
 
         return rs;

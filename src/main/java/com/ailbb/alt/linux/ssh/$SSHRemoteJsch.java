@@ -79,7 +79,8 @@ public class $SSHRemoteJsch extends $SSHExtend implements $SSHInterface {
             stdout = exec.getInputStream();
             stderr = exec.getErrStream();
 
-            rs = readInputStream(stdout, stderr);
+            new $SSHThread(stdout, rs, "data").start();
+            new $SSHThread(stderr, rs, "message").start();
 
             rs.setStatus(statusCmd(exec.getExitStatus(), 0));
             exec.disconnect();

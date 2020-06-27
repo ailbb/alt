@@ -14,38 +14,6 @@ import java.io.InputStreamReader;
  */
 public abstract class $SSHExtend {
     /**
-     * 获取流的结果
-     * @param stdout
-     * @param stderr
-     * @return
-     * @throws IOException
-     */
-    $Result readInputStream(InputStream stdout, InputStream stderr) throws IOException {
-        $Result rs = $.result();
-        BufferedReader reader = null;
-        String line = null; // 当前行
-
-        if (stdout !=null) {
-            reader = new BufferedReader(new InputStreamReader(stdout));
-            while ((line = reader.readLine()) != null) {
-                $.sout("[Result]：" + line);
-                rs.putData(line);
-            }
-        }
-
-        if (stderr != null) {
-            reader = new BufferedReader(new InputStreamReader(stderr));
-            while ((line = reader.readLine()) != null) {
-                rs.addMessage($.warn("[CMD error]：" + line));
-            }
-        }
-
-        $.file.closeStearm(reader);
-
-        return rs;
-    }
-
-    /**
      * 执行命令成功
      * @param stat
      * @return

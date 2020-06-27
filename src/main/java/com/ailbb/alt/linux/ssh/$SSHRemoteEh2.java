@@ -70,7 +70,8 @@ public class $SSHRemoteEh2 extends $SSHExtend implements $SSHInterface {
             stdout = new StreamGobbler(session.getStdout());
             stderr = new StreamGobbler(session.getStderr());
 
-            rs = readInputStream(stdout, stderr);
+            new $SSHThread(stdout, rs, "data").start();
+            new $SSHThread(stderr, rs, "message").start();
 
             session.waitForCondition(ChannelCondition.EXIT_STATUS, connConfiguration.getTimeOut());
 
