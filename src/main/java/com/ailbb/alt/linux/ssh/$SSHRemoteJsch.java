@@ -13,7 +13,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-/**
+/*
  * Created by Wz on 7/10/2019.
  */
 public class $SSHRemoteJsch extends $SSHExtend implements $SSHInterface {

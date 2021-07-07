@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-/**
+/*
  * Created by Wz on 7/10/2019.
  */
 public class $SSHThread implements Runnable {

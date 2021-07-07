@@ -11,7 +11,7 @@ import com.ailbb.alt.linux.ssh.$SSHRemoteJsch;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
+/*
  * Created by Wz on 6/20/2018.
  */
 public class $Linux {
@@ -19,7 +19,7 @@ public class $Linux {
     private $ConnConfiguration connConfiguration;
     private List<$SSHInterface> sshs = new ArrayList<>();
 
-    /**
+    /*
      * 初始化对象
      * @return
      */
@@ -27,7 +27,7 @@ public class $Linux {
         return init(null);
     }
 
-    /**
+    /*
      * 初始化对象
      * @param connConfiguration
      * @return

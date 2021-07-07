@@ -9,11 +9,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-/**
+/*
  * Created by Wz on 7/10/2019.
  */
 public abstract class $SSHExtend {
-    /**
+    /*
      * 执行命令成功
      * @param stat
      * @return
@@ -22,7 +22,7 @@ public abstract class $SSHExtend {
         return statusCmd(stat, 0);
     }
 
-    /**
+    /*
      * 执行命令成功
      * @param stat
      * @param successStat
