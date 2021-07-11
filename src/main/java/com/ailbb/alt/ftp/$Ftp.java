@@ -220,7 +220,7 @@ public class $Ftp {
 
         for(String r: remoteUpLoadPath) {
             try {
-                uploadFile(inputStream, localFile.length(), r, fileName);
+                rs = uploadFile(inputStream, localFile.length(), r, fileName);
             } finally {
                 $.file.closeStearm(inputStream);
             }
@@ -243,20 +243,18 @@ public class $Ftp {
         try {
             logger.info($.concat("上传文件：", fileName, " >>>>>>> ", destPath));
 
-
-            // 对远程目录的处理
-//            if (destPath.contains("/")) {
-                // 创建服务器远程目录结构，创建失败直接返回
-                if (_createDirecroty(destPath, ftpClient) == UploadFTP.UploadStatus.Create_Directory_Fail)
-                    return rs.setSuccess(false).addMessage("创建目录失败：" + destPath);
-//            }
+            // 创建服务器远程目录结构，创建失败直接返回
+            if (_createDirecroty(destPath, ftpClient) == UploadFTP.UploadStatus.Create_Directory_Fail)
+                return rs.setSuccess(false).addMessage("创建目录失败：" + destPath);
 
             ftpClient.changeWorkingDirectory(destPath.trim()); //改变工作路径
 
             File ftpFile = null;
 
             if(isCompress && size >= compressEnableSize) { // 如果需要压缩，则进行压缩
+                logger.info("开始压缩 [" + fileName+"] ：" +$.doubled.toDouble(size/1024/1024, 2)+" MB >>> ");
                 ftpFile = zipFile(inputStream, size, fileName);
+                logger.info("压缩完成 [" + fileName+"] ：" +$.doubled.toDouble(size/1024/1024, 2)+" MB >>> " + $.doubled.toDouble(ftpFile.length()/1024/1024, 2) + " MB");
                 inputStream = new BufferedInputStream(new FileInputStream(ftpFile));
             }
 
@@ -272,10 +270,10 @@ public class $Ftp {
 
             if (ftpClient.storeFile(tmpFileName, inputStream)) {
                 ftpClient.rename(tmpFileName, fileName); // 上传完成后，重命名
-                rs.setSuccess(true).addMessage(logger.info("上传成功：" + fileName));
+                rs.setSuccess(true).addMessage(logger.info("上传成功：" + fileName + "/" + (null == ftpFile ? size : ftpFile.length()) ));
                 if(null != ftpFile) ftpFile.delete(); // 上传成功后，如果是压缩文件，则删除文件
             } else {
-                rs.setSuccess(false);
+                rs.setSuccess(false).addMessage(logger.info("上传文件失败：" + fileName));
             }
 
         } catch (IOException e) {
@@ -589,7 +587,8 @@ public class $Ftp {
                     if (ftpClient.makeDirectory(subDirectory)) {
                         ftpClient.changeWorkingDirectory(subDirectory);
                     } else {
-                        logger.error("创建目录失败");
+                        logger.warn(String.format("创建目录失败：[%s] ", subDirectory));
+                        logger.error(String.format("[%s] [%s]", ftpClient.getReplyCode(), ftpClient.getReplyString()));
                         return UploadFTP.UploadStatus.Create_Directory_Fail;
                     }
                 }
