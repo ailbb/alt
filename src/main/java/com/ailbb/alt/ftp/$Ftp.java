@@ -1,6 +1,6 @@
 package com.ailbb.alt.ftp;
 
-import com.ailbb.ajj.$;
+import com.ailbb.alt.$;
 import com.ailbb.ajj.entity.$ConnConfiguration;
 import com.ailbb.ajj.entity.$Result;
 import com.ailbb.ajj.log.$Logger;
@@ -239,10 +239,12 @@ public class $Ftp {
      */
     public $Result uploadFile(InputStream inputStream, long size, String destPath, String fileName) {
         $Result rs = $.result().setSuccess(false);
+        $FtpKPI kpi = new $FtpKPI();
+
+        long dt = System.currentTimeMillis();
+        logger.info($.concat("上传文件：", fileName, " >>>>>>> ", destPath));
 
         try {
-            logger.info($.concat("上传文件：", fileName, " >>>>>>> ", destPath));
-
             // 创建服务器远程目录结构，创建失败直接返回
             if (_createDirecroty(destPath, ftpClient) == UploadFTP.UploadStatus.Create_Directory_Fail)
                 return rs.setSuccess(false).addMessage("创建目录失败：" + destPath);
@@ -282,7 +284,10 @@ public class $Ftp {
             logger.error(e);
         }
 
-        return rs;
+        kpi.setWriteByte(size);
+        kpi.setFilecount(1);
+
+        return rs.setData(kpi);
     }
 
     /*
