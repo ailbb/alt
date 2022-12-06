@@ -128,7 +128,7 @@
 
         <version.servlet>3.1.0</version.servlet>
         <version.ssh>262</version.ssh>
-        <version.ftp>3.6</version.ftp>
+        <version.ftp>3.9.0</version.ftp>
         <version.jsch>0.1.54</version.jsch>
         <version.ailbb.ajj>1.8</version.ailbb.ajj>
     </properties>
