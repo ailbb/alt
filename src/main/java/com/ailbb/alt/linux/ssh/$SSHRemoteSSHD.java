@@ -2,38 +2,37 @@ package com.ailbb.alt.linux.ssh;
 
 import com.ailbb.ajj.entity.$ConnConfiguration;
 import com.ailbb.ajj.entity.$Result;
-import com.ailbb.ajj.entity.$Status;
 import com.ailbb.alt.$;
 import com.ailbb.alt.exception.$LinuxException;
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
+import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.channel.ChannelExec;
+import org.apache.sshd.client.session.ClientSession;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.util.concurrent.TimeUnit;
 
 /*
  * Created by Wz on 7/10/2019.
  */
-public class $SSHRemoteJsch extends $SSHExtend {
+public class $SSHRemoteSSHD extends $SSHExtend {
     $ConnConfiguration connConfiguration;
-    Session session ; // 连接会话
+    ClientSession session ; // 连接会话
     InputStream stdout = null; // 结果读取流
     InputStream stderr = null; // 错误日志读取流
     BufferedReader reader = null; // 缓存
 
     $Result result = $.result();
 
-    public $SSHRemoteJsch($ConnConfiguration connConfiguration){
+    public $SSHRemoteSSHD($ConnConfiguration connConfiguration){
         this.connConfiguration = connConfiguration;
     }
 
     @Override
     public synchronized boolean isConnected() {
         $.debug("["+connConfiguration.getIp()+"]，获取到连接信息......");
-        return $.isEmptyOrNull(session) ? false : session.isConnected();
+        return $.isEmptyOrNull(session) ? false : session.isOpen();
     }
 
     @Override
@@ -43,16 +42,17 @@ public class $SSHRemoteJsch extends $SSHExtend {
 
             if(isConnected()) return this;
 
-            JSch jSch = new JSch(); // 创建JSch
-            // 获取session
-            session = jSch.getSession(connConfiguration.getUsername(), connConfiguration.getIp(), connConfiguration.getPort());
-            session.setPassword(connConfiguration.getPassword());
-            session.setConfig("StrictHostKeyChecking", "no");
+            SshClient client = SshClient.setUpDefaultClient();
 
-            // 启动连接
-            session.connect();
-            $.debug("["+connConfiguration.getIp()+"]，成功连接......");
-        } catch (JSchException e) {
+            client.start();
+
+            session = client.connect(connConfiguration.getUsername(), connConfiguration.getIp(), connConfiguration.getPort())
+                    .verify(connConfiguration.getTimeOut(), TimeUnit.MILLISECONDS)
+                    .getSession();
+
+            session.addPasswordIdentity(connConfiguration.getPassword());
+            session.auth().verify(connConfiguration.getTimeOut(), TimeUnit.MILLISECONDS);
+        } catch (IOException e) {
             if(connConfiguration.getRetryTimes()==0) {
                 $.debug("["+connConfiguration.getIp()+"]，连接异常（已达最大重试次数）......"+e);
                 throw e;
@@ -81,26 +81,25 @@ public class $SSHRemoteJsch extends $SSHExtend {
         $.file.closeStream(stdout);
         $.file.closeStream(stderr);
         $.file.closeStream(reader);
-        if(!$.isEmptyOrNull(session)) session.disconnect();
+        $.file.closeStream(session);
         return this;
     }
 
     @Override
-    public synchronized $Result execCmd(String runCmdStr) throws Exception {
+    public  $Result execCmd(String runCmdStr) throws Exception{
         try {
             result = $.result();
 
-            $.info("["+connConfiguration.getIp()+"][Jsch Execute cmd]: " + runCmdStr);
+            $.info("["+connConfiguration.getIp()+"][SSHD Execute cmd]: " + runCmdStr);
 
-            ChannelExec channel = (ChannelExec)getSession().openChannel("exec");
-            channel.setCommand(runCmdStr);
-            channel.setInputStream(null);
-            channel.setErrStream(System.err);
+            ChannelExec channel = getSession().createExecChannel(runCmdStr);
+            channel.setOut(null);
+            channel.setErr(null);
 
-            channel.connect();
+            channel.open();
 
-            stdout = channel.getInputStream();
-            stderr = channel.getErrStream();
+            stdout = channel.getInvertedOut();
+            stderr = channel.getInvertedErr();
 
             new $SSHThread(stdout, result, "data").run();
             new $SSHThread(stderr, result, "message").run();
@@ -109,8 +108,8 @@ public class $SSHRemoteJsch extends $SSHExtend {
                 Thread.sleep(100);
             }
 
-            result.setStatus(statusCmd(result.isSuccess() ? channel.getExitStatus() : result.getCode(), 0));
-            channel.disconnect();
+            result.setStatus(statusCmd(result.isSuccess() ? channel.getExitStatus() : result.getCode(), 0,9));
+            channel.close();
             $.debug("["+connConfiguration.getIp()+"]，执行结束......");
         } catch (Exception e) {
             result.setStatus(statusCmd(-1, 0, "远程请求发生异常......"));
@@ -141,7 +140,7 @@ public class $SSHRemoteJsch extends $SSHExtend {
         return result;
     }
 
-    public synchronized Session getSession() throws Exception {
+    public synchronized ClientSession getSession() throws Exception {
         connect(); // 进行连接
         return session;
     }

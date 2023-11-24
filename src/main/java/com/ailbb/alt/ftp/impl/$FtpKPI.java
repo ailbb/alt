@@ -1,4 +1,4 @@
-package com.ailbb.alt.ftp;
+package com.ailbb.alt.ftp.impl;
 
 public class $FtpKPI {
     long writeByte; // 写的大小

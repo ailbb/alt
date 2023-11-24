@@ -6,7 +6,7 @@
 
     <groupId>com.ailbb</groupId>
     <artifactId>alt</artifactId>
-    <version>1.4</version>
+    <version>1.5</version>
 
     <packaging>jar</packaging>
 
@@ -128,9 +128,10 @@
 
         <version.jakarta.servlet>6.0.0</version.jakarta.servlet>
         <version.ssh>262</version.ssh>
+        <version.sshd>2.11.0</version.sshd>
         <version.ftp>3.9.0</version.ftp>
         <version.jsch>0.1.55</version.jsch>
-        <version.ailbb.ajj>1.13</version.ailbb.ajj>
+        <version.ailbb.ajj>1.18</version.ailbb.ajj>
     </properties>
 
     <dependencies>
@@ -149,13 +150,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/ch.ethz.ganymed/ganymed-ssh2 -->
-        <dependency>
-            <groupId>ch.ethz.ganymed</groupId>
-            <artifactId>ganymed-ssh2</artifactId>
-            <version>${version.ssh}</version>
-        </dependency>
-
         <!-- https://mvnrepository.com/artifact/commons-net/commons-net - FTP -->
         <dependency>
             <groupId>commons-net</groupId>
@@ -168,6 +162,17 @@
             <artifactId>jsch</artifactId>
             <version>${version.jsch}</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.apache.sshd/sshd-core -->
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-core</artifactId>
+            <version>${version.sshd}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-sftp</artifactId>
+            <version>${version.sshd}</version>
+        </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.ailbb/ajj -->
         <dependency>
@@ -175,7 +180,6 @@
             <artifactId>ajj</artifactId>
             <version>${version.ailbb.ajj}</version>
         </dependency>
-
     </dependencies>
 
 </project>

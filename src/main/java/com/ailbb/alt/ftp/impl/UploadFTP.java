@@ -1,4 +1,4 @@
-package com.ailbb.alt.ftp;
+package com.ailbb.alt.ftp.impl;
 
 import org.apache.commons.net.PrintCommandListener;
 import org.apache.commons.net.ftp.FTP;

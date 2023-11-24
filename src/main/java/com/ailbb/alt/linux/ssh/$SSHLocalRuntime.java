@@ -14,6 +14,8 @@ import java.io.InputStreamReader;
 public class $SSHLocalRuntime extends $SSHExtend implements $SSHInterface {
     Runtime rt; // 运行时连接
 
+    $Result result = $.result();
+
     @Override
     public boolean isConnected() {
         return !$.isEmptyOrNull(rt) ;
@@ -38,30 +40,80 @@ public class $SSHLocalRuntime extends $SSHExtend implements $SSHInterface {
     }
 
     @Override
-    public $Result executeCmd(String cmd) throws Exception {
-        $Result rs = $.result();
+    public $Result execCmd(String runCmdStr) throws Exception {
+        result = $.result();
 
         try {
-            $.info("cmd:" + cmd);
+            $.info("[Local Execute cmd]:" + runCmdStr);
 
-            Process proc = getRuntime().exec(new String[]{"/bin/sh","-c", $.string.trim(cmd)}); // 执行命令
+            Process proc = getRuntime().exec(new String[]{"/bin/sh","-c", runCmdStr}); // 执行命令
             InputStream stdout = proc.getInputStream(); // 输入流
             InputStream stderr = proc.getErrorStream(); // 错误流
 
-            new $SSHThread(stdout, rs, "data").start();
-            new $SSHThread(stderr, rs, "message").start();
+            new $SSHThread(stdout, result, "data").run();
+            new $SSHThread(stderr, result, "message").run();
 
-            rs.setStatus(statusCmd(proc.waitFor(), 0));
+            result.setStatus(statusCmd(proc.waitFor(), 0));
         } catch (Exception e) {
             $.error("本地请求发生异常......");
             throw $.exception(e);
-        } finally {
-//            disconnect();
         }
 
-        return rs;
+        return result;
     }
 
+    @Override
+    public $Result batchExecuteCmd(String... cmd) throws Exception {
+        result = $.result();
+
+        try {
+            String runCmdStr = $.join(cmd," && ");
+            $.info("[Local Execute cmd]:" + runCmdStr);
+
+            Process proc = getRuntime().exec(new String[]{"/bin/sh","-c", runCmdStr}); // 执行命令
+            InputStream stdout = proc.getInputStream(); // 输入流
+            InputStream stderr = proc.getErrorStream(); // 错误流
+
+            new $SSHThread(stdout, result, "data").run();
+            new $SSHThread(stderr, result, "message").run();
+
+            result.setStatus(statusCmd(proc.waitFor(), 0));
+        } catch (Exception e) {
+            $.error("本地请求发生异常......");
+            throw $.exception(e);
+        }
+
+        return result;
+    }
+
+    @Override
+    public $Result batchExecuteCmdSudo(String... cmd) throws Exception {
+        result = $.result();
+
+        try {
+            String runCmdStr = $.join(cmd," && ");
+            $.info("[Local Execute cmd]:" + runCmdStr);
+
+            Process proc = getRuntime().exec(new String[]{"sudo sh -c ", runCmdStr}); // 执行命令
+            InputStream stdout = proc.getInputStream(); // 输入流
+            InputStream stderr = proc.getErrorStream(); // 错误流
+
+            new $SSHThread(stdout, result, "data").run();
+            new $SSHThread(stderr, result, "message").run();
+
+            result.setStatus(statusCmd(proc.waitFor(), 0));
+        } catch (Exception e) {
+            $.error("本地请求发生异常......");
+            throw $.exception(e);
+        }
+
+        return result;
+    }
+
+    @Override
+    public $Result getResult() {
+        return result;
+    }
 
     public Runtime getRuntime() throws Exception {
         connect(); // 进行连接

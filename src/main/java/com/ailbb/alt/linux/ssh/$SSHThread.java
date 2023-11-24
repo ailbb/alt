@@ -29,32 +29,29 @@ public class $SSHThread implements Runnable {
         this.type = type;
     }
 
-    public void start() {
-        Thread thread = new Thread(this);
-        thread.setDaemon(true);//将其设置为守护线程
-        thread.start();
-    }
-
+    @Override
     public void run() {
         BufferedReader br = null;
         try {
+            if(null == inputStream) return;
             br = new BufferedReader(new InputStreamReader(inputStream, character));
             String line = null;
             while ((line = br.readLine()) != null) {
                 if (line != null) {
-                    $.sout(line);
+                    $.debugOut(line);
 
                     if(type.equals("message"))
                         rs.addMessage(line);
                     else
-                        rs.addData(line);
+                        rs.addDataList(line);
                 }
             }
         } catch (IOException e) {
+            rs.addError(e);
             e.printStackTrace();
         } finally {
-            $.file.closeStearm(inputStream);
-            $.file.closeStearm(br);
+            $.file.closeStream(inputStream);
+            $.file.closeStream(br);
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.ailbb.alt;
 
 import com.ailbb.alt.ftp.$Ftp;
+import com.ailbb.alt.ftp.impl.$XFtp;
 import com.ailbb.alt.linux.$Linux;
 
 /*
